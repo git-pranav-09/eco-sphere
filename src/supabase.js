@@ -1,27 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
-
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const isSupabaseConfigured = Boolean(url && anonKey && !url.includes("YOUR_PROJECT"));
-export const supabase = isSupabaseConfigured ? createClient(url, anonKey) : null;
+const COUNTRY_CODES = {
+  India:"IN",Japan:"JP",Brazil:"BR","United States":"US","United Kingdom":"GB",
+  Canada:"CA",Kenya:"KE","Other / prefer not to say":"OT"
+};
+export const isSupabaseConfigured = true;
+export const supabase = null;
 
 export async function submitStory(payload) {
-  if (!supabase) throw new Error("Connect Supabase first. Follow SETUP.md.");
-  const { data, error } = await supabase.functions.invoke("story-ai", {
-    body: { action: "submit", ...payload }
+  const body = {
+    body: String(payload.story || "").trim(),
+    country: payload.country || "Not shared",
+    country_code: COUNTRY_CODES[payload.country] || "OT",
+    theme: payload.theme || "Kindness",
+    consent: true
+  };
+  const response = await fetch("/api/submit-story", {
+    method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)
   });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error || "Could not submit story.");
   return data;
 }
 
-export async function translateStory(text, targetLanguage) {
-  if (!supabase) throw new Error("AI translation needs the Supabase connection.");
-  const { data, error } = await supabase.functions.invoke("story-ai", {
-    body: { action: "translate", text, targetLanguage }
-  });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-  return data.translation;
+export async function translateStory() {
+  throw new Error("Automatic translation is not enabled in the Render PostgreSQL migration yet.");
 }
