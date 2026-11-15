@@ -1,67 +1,70 @@
 # Echo Sphere
 
-A human-centered global storytelling experience with an interactive globe and a migrated moderator/admin workspace.
+A human-centered global storytelling experience with an interactive globe, public story discovery, Google-authenticated administration, and human moderation.
 
-## Render deployment (recommended)
+## Recommended free-first deployment: Render + Supabase PostgreSQL
 
-This branch, `render-migration`, contains the Render full-stack migration:
-- React + Vite public frontend
-- Express API replacing the Hatchable API handlers
-- Render PostgreSQL schema for stories, admin roles and moderation logs
-- Google OAuth login with verified-email checks and database-backed roles
-- Original Hatchable admin dashboard interface and role model
+This repository contains the React/Vite frontend and Express backend. Render hosts both the public website and its API on one public URL; Supabase supplies PostgreSQL. The application uses Google OAuth and grants dashboard access only to email addresses present in the `admin_roles` table.
 
-### Deploy with Render Blueprint
+### Included features
 
-1. Push/merge this branch to the repository's default branch, or select this branch when connecting the repository.
-2. In Render, choose **New → Blueprint** and select this repository. Render reads `render.yaml` and provisions the web service and PostgreSQL database.
-3. In the web service environment, set:
-   - `APP_BASE_URL`: your Render service URL, e.g. `https://your-service.onrender.com`
-   - `INITIAL_SUPER_ADMIN_EMAIL`: the Google account email that should receive initial super-admin access (use the project owner's intended admin email).
-   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: create OAuth credentials in Google Cloud Console.
-4. In Google Cloud Console, configure an OAuth consent screen and add the exact callback URL:
+- Responsive React + Vite public website and interactive globe
+- Public feed that displays approved stories only
+- Story submission with consent, input checks and rate limiting
+- Express API for public stories and admin operations
+- Google OAuth with verified-email checks
+- Database-backed super-admin, moderator and analyst roles
+- Moderation queue, approve/reject actions, team controls and audit log
+- PostgreSQL schema and persistent login sessions
+
+## Deploy
+
+1. Create a Supabase project. In **Project Settings → Database → Connect**, select the **Session pooler** connection string. Keep the database password private.
+2. In Supabase **SQL Editor**, run the contents of `db/schema.sql`.
+3. In Render, choose **New → Blueprint**, connect this GitHub repository and let Render read `render.yaml`. The Blueprint creates a free web service; the database is external and is not created by Render.
+4. In the Render web service's **Environment** settings, add:
+   - `DATABASE_URL`: Supabase Session pooler connection string
+   - `APP_BASE_URL`: the public Render URL, e.g. `https://echo-sphere.onrender.com`
+   - `GOOGLE_CLIENT_ID`: Google OAuth web client ID
+   - `GOOGLE_CLIENT_SECRET`: Google OAuth web client secret
+   - `INITIAL_SUPER_ADMIN_EMAIL`: the one administrator Google email
+   - `SESSION_SECRET`: a long random value of at least 32 characters (Render Blueprint generates one automatically)
+   - `NODE_ENV`: `production` (set by Blueprint)
+5. In Google Cloud Console, configure an OAuth consent screen and create an OAuth client of type **Web application**. Add the Render URL as an authorized JavaScript origin and add this authorized redirect URI:
    `https://YOUR-RENDER-SERVICE.onrender.com/auth/google/callback`
-   Add your service URL as an authorized JavaScript origin where requested.
-5. Deploy/redeploy. The server applies `db/schema.sql` on startup and creates the initial super-admin row if the configured email is not already present.
-6. Visit `/admin/login`, choose Google sign-in with the configured initial super-admin account, then open `/admin/`.
+6. Save the Google client ID and secret in Render, then redeploy.
+7. Open `https://YOUR-RENDER-SERVICE.onrender.com/admin/login` and sign in with the exact Google account configured in `INITIAL_SUPER_ADMIN_EMAIL`. Open `/admin/` for the dashboard.
 
-### Local development
+The server applies `db/schema.sql` on startup and creates the initial super-admin role if it does not already exist. Sign-in alone never grants administrator access.
 
-1. Install Node.js 20 or newer.
-2. Copy `.env.example` to `.env` and fill in the database URL, session secret, Google OAuth credentials and callback URL.
-3. Create a PostgreSQL database and run:
-   `psql "$DATABASE_URL" -f db/schema.sql`
-4. Run `npm install`, `npm run dev` for the Vite frontend, and `npm start` for the Express server (the Vite dev server proxies are not configured in this migration yet; use the production server to test the full login/API flow).
+## Free-tier limitations
 
-## Admin roles
+- Render Free web services spin down after inactivity; the first visit after sleeping can take around a minute to wake.
+- Supabase Free projects can pause after a period of inactivity and have quotas. Check current limits before launch.
+- This is suitable for a school project, prototype and small demonstration, not a guaranteed always-on production service. Do not collect sensitive personal information.
+- Before inviting broad public traffic, add CAPTCHA and stronger persistent abuse controls, review privacy/retention requirements, and arrange a backup plan.
 
-- **super_admin**: dashboard, moderation, team administration and audit logs
-- **moderator**: dashboard and story moderation
-- **analyst**: dashboard and aggregated insights only
+## Local development
 
-Only verified Google accounts already present in `admin_roles` can enter the workspace. Sign-in alone never grants admin rights. The initial super-admin email is configured in Render, not hard-coded into client code.
+Requires Node.js 20+.
 
-## Database
+```bash
+npm install
+npm run build
+npm start
+```
 
-The schema preserves the original Hatchable tables and role model:
-- `stories` with pending/approved/rejected moderation state
-- `admin_roles` with super_admin/moderator/analyst roles
-- `moderation_logs` for moderation and administrator actions
+Set the required environment variables in a local `.env` file (never commit it). Run the SQL in `db/schema.sql` against a PostgreSQL database first.
 
-This migration creates the schema in a new Render database. It does **not** automatically copy historical Hatchable production records; if there are existing stories/admins to preserve, export them from Hatchable and import them into Render PostgreSQL before switching the public domain.
+## Security notes
 
-## Security and launch checklist
+- Never commit `.env`, OAuth secrets, database passwords or session secrets.
+- Keep the Supabase database connection string server-side in Render environment variables only.
+- The public client does not receive database credentials.
+- Only verified Google accounts with a row in `admin_roles` can access the admin workspace.
+- Country-level story locations are used; do not collect exact contributor locations.
+- Review and approve every story before publication.
 
-- Use a long, unique `SESSION_SECRET`; keep all credentials in Render environment variables, never Git.
-- Restrict the Google OAuth client to the production callback URL.
-- Keep the database private and use Render's internal connection string.
-- Configure a custom domain and HTTPS if desired.
-- Test login, logout, each role, approve/reject, team changes, audit logs and public story submission.
-- Add CAPTCHA and stronger abuse prevention before inviting broad public traffic. The submission endpoint has basic IP rate limiting and privacy-field checks, not a full anti-abuse system.
-- Back up the database and verify the retention/backup policy of the selected Render PostgreSQL plan.
+## Existing data
 
-## Important status note
-
-The Render configuration and migration code are prepared in this branch. A live Render service, OAuth credentials and a populated production database are not created until the repository is connected to your Render account and the environment values are configured.
-
-**Important Render free-tier warning:** this Blueprint currently selects a Free PostgreSQL database for initial testing. Render documents that Free Postgres expires 30 days after creation and has no backups; after its grace period, data is deleted. Free web services also spin down after 15 minutes idle. Do not use this default database for lasting public submissions. Before collecting real stories, upgrade the database to a paid plan (currently the smallest paid plan is listed as `0.1c-256mb`) and confirm backup coverage. See [Render's free-instance limitations](https://render.com/docs/free) and [Postgres plan information](https://render.com/docs/compute-plans).
+This migration uses a new PostgreSQL database. It does not automatically transfer records from the Hatchable-hosted database. Export/import any stories you intend to preserve before switching users to the new site.
