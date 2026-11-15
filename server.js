@@ -172,7 +172,7 @@ const serveAdminDashboard=asyncRoute(async(req,res)=>{
 });
 app.get("/admin/",serveAdminDashboard);
 app.get("/admin/index.html",serveAdminDashboard);
-app.use(express.static(path.join(projectRoot,"dist"),{index:"index.html",maxAge:isProduction?"1h":0}));
+app.use(express.static(path.join(projectRoot,"public"),{index:"index.html",maxAge:isProduction?"1h":0}));
 app.get("/healthz",(_req,res)=>res.json({ok:true,service:"echo-sphere"}));
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"An unexpected server error occurred."});});
 export default app;
