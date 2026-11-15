@@ -155,11 +155,14 @@ app.post("/api/submit-story",rateLimit({windowMs:60*60*1000,limit:5,standardHead
 
 app.get("/admin/login",(req,res)=>res.sendFile(path.join(__dirname,"dist/admin/login.html")));
 app.get("/admin",(req,res)=>res.redirect("/admin/"));
-app.get("/admin/",requireLogin,asyncRoute(async(req,res)=>{
+const serveAdminDashboard=asyncRoute(async(req,res)=>{
+  if(!req.isAuthenticated())return res.redirect("/admin/login");
   const role=await roleOf(req.user.email);
   if(!role)return res.redirect("/admin/login?error=not_admin");
   res.sendFile(path.join(__dirname,"dist/admin/index.html"));
-}));
+});
+app.get("/admin/",serveAdminDashboard);
+app.get("/admin/index.html",serveAdminDashboard);
 app.use(express.static(path.join(__dirname,"dist"),{index:"index.html",maxAge:isProduction?"1h":0}));
 app.get("/healthz",(_req,res)=>res.json({ok:true,service:"echo-sphere"}));
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"An unexpected server error occurred."});});
