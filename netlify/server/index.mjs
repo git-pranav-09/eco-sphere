@@ -1,4 +1,7 @@
-// Netlify Server entry point.
-// The existing Express application owns authentication, API routes and admin pages.
-// Netlify serves built static assets from dist and forwards dynamic requests here.
-import "../../server.js";
+import app from "../../server.js";
+
+// Netlify Server runs the existing Express application as the site's server.
+const port = Number(process.env.PORT || 3000);
+app.listen(port, "0.0.0.0", () => {
+  console.log("Echo Sphere listening on", port);
+});
