@@ -25,7 +25,7 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30000
 });
-await pool.query(await fs.readFile(path.join(__dirname,"db/schema.sql"),"utf8"));
+await pool.query((await fs.readFile(path.join(__dirname,"db/schema.sql"),"utf8")).toString());
 const bootstrapEmail = String(process.env.INITIAL_SUPER_ADMIN_EMAIL || "").trim().toLowerCase();
 if (bootstrapEmail) {
   await pool.query(
