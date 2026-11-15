@@ -153,13 +153,21 @@ app.post("/api/submit-story",rateLimit({windowMs:60*60*1000,limit:5,standardHead
   res.status(201).json({ok:true,id:rows[0].id,status:"pending"});
 }));
 
-app.get("/admin/login",(req,res)=>res.sendFile(path.join(__dirname,"dist/admin/login.html")));
+const privateAdminFile = name => path.join(__dirname,"private","admin",name);
+app.get("/admin/login",(req,res)=>res.sendFile(privateAdminFile("login.html")));
+app.get("/admin/admin.css",(_req,res)=>res.sendFile(privateAdminFile("admin.css")));
+app.get("/admin/login.js",(_req,res)=>res.sendFile(privateAdminFile("login.js")));
+app.get("/admin/admin.js",requireLogin,asyncRoute(async(req,res)=>{
+  const role=await roleOf(req.user.email);
+  if(!role)return res.status(403).send("Forbidden");
+  res.sendFile(privateAdminFile("admin.js"));
+}));
 app.get("/admin",(req,res)=>res.redirect("/admin/"));
 const serveAdminDashboard=asyncRoute(async(req,res)=>{
   if(!req.isAuthenticated())return res.redirect("/admin/login");
   const role=await roleOf(req.user.email);
   if(!role)return res.redirect("/admin/login?error=not_admin");
-  res.sendFile(path.join(__dirname,"dist/admin/index.html"));
+  res.sendFile(privateAdminFile("index.html"));
 });
 app.get("/admin/",serveAdminDashboard);
 app.get("/admin/index.html",serveAdminDashboard);
@@ -167,6 +175,6 @@ app.use(express.static(path.join(__dirname,"dist"),{index:"index.html",maxAge:is
 app.get("/healthz",(_req,res)=>res.json({ok:true,service:"echo-sphere"}));
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"An unexpected server error occurred."});});
 export default app;
-if (process.env.NETLIFY_SERVER !== "true") {
+if (process.env.NETLIFY_SERVER !== "true" && !process.env.VERCEL) {
   app.listen(port,"0.0.0.0",()=>console.log("Echo Sphere listening on",port));
 }
