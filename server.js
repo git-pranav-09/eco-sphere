@@ -15,6 +15,7 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 const isProduction = process.env.NODE_ENV === "production";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = process.cwd();
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.");
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters.");
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) throw new Error("Google OAuth credentials are required.");
@@ -25,7 +26,7 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30000
 });
-await pool.query((await fs.readFile(path.join(__dirname,"db/schema.sql"),"utf8")).toString());
+await pool.query((await fs.readFile(path.join(projectRoot,"db/schema.sql"),"utf8")).toString());
 const bootstrapEmail = String(process.env.INITIAL_SUPER_ADMIN_EMAIL || "").trim().toLowerCase();
 if (bootstrapEmail) {
   await pool.query(
@@ -153,7 +154,7 @@ app.post("/api/submit-story",rateLimit({windowMs:60*60*1000,limit:5,standardHead
   res.status(201).json({ok:true,id:rows[0].id,status:"pending"});
 }));
 
-const privateAdminFile = name => path.join(__dirname,"private","admin",name);
+const privateAdminFile = name => path.join(projectRoot,"private","admin",name);
 app.get("/admin/login",(req,res)=>res.sendFile(privateAdminFile("login.html")));
 app.get("/admin/admin.css",(_req,res)=>res.sendFile(privateAdminFile("admin.css")));
 app.get("/admin/login.js",(_req,res)=>res.sendFile(privateAdminFile("login.js")));
@@ -171,7 +172,7 @@ const serveAdminDashboard=asyncRoute(async(req,res)=>{
 });
 app.get("/admin/",serveAdminDashboard);
 app.get("/admin/index.html",serveAdminDashboard);
-app.use(express.static(path.join(__dirname,"dist"),{index:"index.html",maxAge:isProduction?"1h":0}));
+app.use(express.static(path.join(projectRoot,"dist"),{index:"index.html",maxAge:isProduction?"1h":0}));
 app.get("/healthz",(_req,res)=>res.json({ok:true,service:"echo-sphere"}));
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"An unexpected server error occurred."});});
 export default app;
