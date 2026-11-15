@@ -5,7 +5,7 @@
   "framework": "vite",
   "functions": {
     "api/index.js": {
-      "includeFiles": "private/admin/**"
+      "includeFiles": "{db/schema.sql,private/admin/**}"
     }
   },
   "rewrites": [
@@ -13,9 +13,11 @@
     { "source": "/auth/(.*)", "destination": "/api/index.js" },
     { "source": "/healthz", "destination": "/api/index.js" },
     { "source": "/admin/login", "destination": "/api/index.js" },
+    { "source": "/admin/admin.css", "destination": "/api/index.js" },
+    { "source": "/admin/login.js", "destination": "/api/index.js" },
+    { "source": "/admin/admin.js", "destination": "/api/index.js" },
     { "source": "/admin/", "destination": "/api/index.js" },
     { "source": "/admin", "destination": "/api/index.js" },
-    { "source": "/admin/(.*)", "destination": "/api/index.js" },
-    { "source": "/auth/logout", "destination": "/api/index.js" }
+    { "source": "/admin/(.*)", "destination": "/api/index.js" }
   ]
 }
