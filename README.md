@@ -63,3 +63,5 @@ This migration creates the schema in a new Render database. It does **not** auto
 ## Important status note
 
 The Render configuration and migration code are prepared in this branch. A live Render service, OAuth credentials and a populated production database are not created until the repository is connected to your Render account and the environment values are configured.
+
+**Important Render free-tier warning:** this Blueprint currently selects a Free PostgreSQL database for initial testing. Render documents that Free Postgres expires 30 days after creation and has no backups; after its grace period, data is deleted. Free web services also spin down after 15 minutes idle. Do not use this default database for lasting public submissions. Before collecting real stories, upgrade the database to a paid plan (currently the smallest paid plan is listed as `0.1c-256mb`) and confirm backup coverage. See [Render's free-instance limitations](https://render.com/docs/free) and [Postgres plan information](https://render.com/docs/compute-plans).
