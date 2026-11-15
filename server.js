@@ -166,4 +166,7 @@ app.get("/admin/index.html",serveAdminDashboard);
 app.use(express.static(path.join(__dirname,"dist"),{index:"index.html",maxAge:isProduction?"1h":0}));
 app.get("/healthz",(_req,res)=>res.json({ok:true,service:"echo-sphere"}));
 app.use((err,_req,res,_next)=>{console.error(err);res.status(500).json({error:"An unexpected server error occurred."});});
-app.listen(port,"0.0.0.0",()=>console.log("Echo Sphere listening on",port));
+export default app;
+if (process.env.NETLIFY_SERVER !== "true") {
+  app.listen(port,"0.0.0.0",()=>console.log("Echo Sphere listening on",port));
+}
