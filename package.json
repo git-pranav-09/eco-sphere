@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.js",
-    "postinstall": "node -e \"console.log('Echo Sphere dependencies ready')\""
+    "start": "node server.js"
   },
   "dependencies": {
     "connect-pg-simple": "^10.0.0",
